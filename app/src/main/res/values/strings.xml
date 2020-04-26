@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">MarsPlay</string>
+    <string name="fetch_img_str">Fetching Images...Please Wait</string>
+    <string name="upload_choice_str">Upload Photo Using ?</string>
 </resources>

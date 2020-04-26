@@ -2,45 +2,61 @@ package com.shivam.marsplay.repository;
 
 import android.app.Application;
 import android.net.Uri;
-import android.widget.Toast;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.lifecycle.MutableLiveData;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.storage.FileDownloadTask;
+import com.google.firebase.storage.ListResult;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.shivam.marsplay.application.MarsPlayApplication;
+import com.shivam.marsplay.listener.UploadOptionSelectListener;
+import com.shivam.marsplay.util.Constants;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import dagger.Module;
 
 @Module
 public class MainRepository {
 
-
+    private static MainRepository mainRepository = null;
     private StorageReference mStorageRef;
     private Application application;
 
-    public MainRepository(Application application) {
+    private MainRepository(Application application) {
 
         this.application = application;
         this.mStorageRef = MarsPlayApplication.get(application).getApiComponent().provideFirebaseStorageReference();
 
-        justCheck(application);
     }
 
-    public void UploadImageFile() {
+    public static MainRepository getInstance(Application application) {
 
-        Uri file = Uri.fromFile(new File("path/to/images/rivers.jpg"));
-        StorageReference riversRef = mStorageRef.child("images/rivers.jpg");
+        if (mainRepository == null) {
+            mainRepository = new MainRepository(application);
+        }
 
-//        riversRef.putBytes(bytes)
+        return mainRepository;
+    }
+
+    public MutableLiveData<Boolean> UploadImageFile(byte[] bytes) {
+
+        MutableLiveData<Boolean> photoUploadLiveData = new MutableLiveData<>();
+
+//        Uri file = Uri.fromFile(new File("path/to/images/rivers.jpg"));
+//        Uri file = Uri.fromFile(photoFile);
+        StorageReference photoRef = mStorageRef.child(Constants.BUCKET_NAME + System.currentTimeMillis());
+
+        photoRef.putBytes(bytes)
 //        riversRef.putStream(stream)
-        riversRef.putFile(file)
+//        photoRef.putFile(file)
                 .addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
                     @Override
                     public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
@@ -48,11 +64,15 @@ public class MainRepository {
 
 //                        Uri downloadUrl = taskSnapshot.getDownloadUrl();
 
-                        mStorageRef.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                        photoUploadLiveData.postValue(true);
+
+
+                        photoRef.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                             @Override
                             public void onSuccess(Uri uri) {
                                 Uri downloadUrl = uri;
-//                                Toast.makeText(application.getApplicationContext(), "Upload success! URL - " + downloadUrl.toString(), Toast.LENGTH_SHORT).show();
+                                Log.d("photolog", "Upload success! URL - " + downloadUrl.toString());
+
                             }
                         });
                     }
@@ -65,8 +85,15 @@ public class MainRepository {
 
 //                        Toast.makeText(application.getApplicationContext(), "Upload Failed! " , Toast.LENGTH_SHORT).show();
 
+                        Log.d("photolog", "upload failed - " + exception.getMessage());
+                        exception.printStackTrace();
+
+                        photoUploadLiveData.postValue(false);
+
                     }
                 });
+
+        return photoUploadLiveData;
     }
 
     public void downloadFiles() {
@@ -95,8 +122,51 @@ public class MainRepository {
         }
     }
 
-    public void justCheck(Application application) {
-        Toast.makeText(application.getApplicationContext(), "just checking", Toast.LENGTH_SHORT).show();
-    }
 
+    public MutableLiveData<String> listAllFiles() {
+
+        MutableLiveData<String> arrayListMutableLiveData = new MutableLiveData<>();
+
+        StorageReference listRef = mStorageRef.child(Constants.BUCKET_NAME);
+
+        listRef.listAll()
+                .addOnSuccessListener(new OnSuccessListener<ListResult>() {
+                    @Override
+                    public void onSuccess(ListResult listResult) {
+                        for (StorageReference prefix : listResult.getPrefixes()) {
+
+                        }
+
+                        ArrayList<String> urlArrayList = new ArrayList<>();
+                        for (StorageReference item : listResult.getItems()) {
+                            // All the items under listRef.
+
+                            item.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                                @Override
+                                public void onSuccess(Uri uri) {
+                                    Uri downloadUrl = uri;
+                                    Log.d("photolog", "item URL - " + downloadUrl.toString());
+
+                                    urlArrayList.add(downloadUrl.toString());
+                                    arrayListMutableLiveData.postValue(downloadUrl.toString());
+
+                                }
+                            });
+
+
+                        }
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        // Uh-oh, an error occurred!
+                        Log.d("photolog", "get list failure " + e.getMessage());
+                        e.printStackTrace();
+                        arrayListMutableLiveData.postValue(null);
+                    }
+                });
+
+        return arrayListMutableLiveData;
+    }
 }
