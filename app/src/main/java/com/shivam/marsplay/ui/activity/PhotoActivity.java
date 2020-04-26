@@ -24,13 +24,11 @@ public class PhotoActivity extends AppCompatActivity {
     Matrix matrix = new Matrix();
     Matrix savedMatrix = new Matrix();
 
-    // We can be in one of these 3 states
     static final int NONE = 0;
     static final int DRAG = 1;
     static final int ZOOM = 2;
     int mode = NONE;
 
-    // Remember some things for zooming
     PointF start = new PointF();
     PointF mid = new PointF();
     float oldDist = 1f;
