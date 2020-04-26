@@ -69,6 +69,8 @@ public class MainActivity extends AppCompatActivity {
 
         dialog = new ProgressDialog(MainActivity.this);
         initUI();
+
+        mainViewModel.getListFromFirebase();
     }
 
     private void initUI() {

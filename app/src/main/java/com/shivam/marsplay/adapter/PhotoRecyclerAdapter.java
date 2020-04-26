@@ -1,7 +1,9 @@
 package com.shivam.marsplay.adapter;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -10,6 +12,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.shivam.marsplay.R;
 import com.shivam.marsplay.databinding.ItemPhotoBinding;
+import com.shivam.marsplay.ui.activity.PhotoActivity;
+import com.shivam.marsplay.util.Constants;
 
 import java.util.ArrayList;
 
@@ -44,6 +48,12 @@ public class PhotoRecyclerAdapter extends RecyclerView.Adapter<PhotoRecyclerAdap
                 .fallback(R.drawable.ic_loading)
                 .into(holder.itemPhotoBinding.ivPhoto);
 
+        holder.itemPhotoBinding.ivPhoto.setOnClickListener(v -> {
+
+            Intent intent = new Intent(context, PhotoActivity.class);
+            intent.putExtra(Constants.PHOTO_URL_STR, urlArrayList.get(position));
+            context.startActivity(intent);
+        });
     }
 
     @Override

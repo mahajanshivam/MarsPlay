@@ -9,17 +9,22 @@ import androidx.lifecycle.MutableLiveData;
 
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.google.firebase.storage.FileDownloadTask;
 import com.google.firebase.storage.ListResult;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.shivam.marsplay.application.MarsPlayApplication;
-import com.shivam.marsplay.listener.UploadOptionSelectListener;
 import com.shivam.marsplay.util.Constants;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import dagger.Module;
 
@@ -150,6 +155,7 @@ public class MainRepository {
                                     urlArrayList.add(downloadUrl.toString());
                                     arrayListMutableLiveData.postValue(downloadUrl.toString());
 
+                                    writeToFireBaseDatabase(downloadUrl.toString());
                                 }
                             });
 
@@ -168,5 +174,43 @@ public class MainRepository {
                 });
 
         return arrayListMutableLiveData;
+    }
+
+    public void writeToFireBaseDatabase(String url) {
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference myRef = database.getReference(Constants.DATABASE_NAME);
+
+        myRef.setValue(url);
+    }
+
+    public MutableLiveData<ArrayList<String>> getListFromFirebase() {
+
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference databaseReference = database.getReference(Constants.DATABASE_NAME);
+        MutableLiveData<ArrayList<String>> listMutableLiveData = new MutableLiveData<ArrayList<String>>();
+
+
+        databaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot snapshot) {
+                Iterator<DataSnapshot> dataSnapshots = snapshot.getChildren().iterator();
+
+                while (dataSnapshots.hasNext()) {
+                    DataSnapshot dataSnapshotChild = dataSnapshots.next();
+                    String url = dataSnapshotChild.getValue(String.class); // check here whether you are getting the TagName_Chosen
+
+                    Log.d("photolog", "item from firebase - " + url);
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+                Log.d("photolog", "read from firebase is cancelled");
+
+            }
+        });
+
+        return listMutableLiveData;
+
     }
 }
